@@ -1,10 +1,11 @@
+@tagged
 Feature:  Web Scrapper
  
   Scenario: 1
     Given I connect to http://www.worten.pt
     When I search a product "ELECTRONIC ARTS"
     Then the product search result should include "Jogo Xbox One FIFA 22"
-    And the product description should exist with
+    And the product "description" should exist with
     |description|
     |CONMBOL    |
 
@@ -12,7 +13,7 @@ Feature:  Web Scrapper
     Given I connect to http://www.worten.pt
     When I search a product "PS4 FIFA 22"
     Then the product search result should include "Jogo PS4 FIFA 22"
-    And the product characteristics should exist with
+    And the product "characteristics" should exist with
     |Referência|EAN          |Género  |Idioma|
     |7413425   |5030943123776|Desporto|Inglês|
 
@@ -20,8 +21,8 @@ Feature:  Web Scrapper
     Given I connect to http://www.worten.pt
     When I search a product "PS4 FIFA 22"
     Then the product search result should include "Jogo PS4 FIFA 22"
-    And the product oldest comment should be 3 months or older
-    And the product ratings should exist with
+    And the product oldest comment should be "3" "months" or older
+    And the product "ratings" should exist with
     |2 stars|
     |0      |
    
@@ -38,7 +39,7 @@ Feature:  Web Scrapper
     When I search a product "PS4 FIFA 22"
     Then the product search result should include "Jogo PS4 FIFA 22"
     When I add the product to the cart
-    Then cart should have 1 item
+    Then cart should have "1" item
     And the cart total value should be valid
    
   Scenario: 6

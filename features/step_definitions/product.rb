@@ -14,7 +14,7 @@ Then(/^the product search result should include "(.*)"$/) do |pattern|
   fail("Product was not found on search results.") unless match_found
 end
 
-Then(/^the product (description|characteristics|ratings) should exist with$/) do |option,table|
+Then(/^the product "(description|characteristics|ratings)" should exist with$/) do |option,table|
   product_details = product_details(@connection,@product_page)
   input = table.hashes[0]
   case option
@@ -31,7 +31,7 @@ Then(/^the product (description|characteristics|ratings) should exist with$/) do
   end
 end
 
-Then(/^the product oldest comment should be (\d+) (months|days) or older$/) do |months,option|
+Then(/^the product oldest comment should be "(\d+)" "(months|days)" or older$/) do |months,option|
   comments = all_comments(@connection,@product_page)
   age = []
   option

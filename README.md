@@ -16,5 +16,8 @@ Unzip and get 'chromedriver.exe' into the bin folder of you ruby installation
 
 ### Run the test automation
 
+```bash
+cucumber .\features\web_scrapper.feature --format html --out test_run.html
+```
 
-HTML file report is generated in the main directory
+HTML file report test_run.html is generated in the main directory

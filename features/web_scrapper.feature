@@ -1,4 +1,3 @@
-@tagged
 Feature:  Web Scrapper
  
   Scenario: 1

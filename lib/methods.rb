@@ -1,3 +1,5 @@
+# create a new Watir Browser object, go to site and accept cookies
+# returns the Watir Browser object
 def connect()
 	browser = Watir::Browser.new
 	detail_url = 'https://www.worten.pt'
@@ -26,13 +28,15 @@ def search_product(browser,search_string)
 	return result_array
 end
 
+# takes a product href and returns parsed results (in this case we are interested in the product description, characteristics and ratings)
+# returns a hash: {description => "stuff", characteristics => {}, ratings => {}}
 def product_details(browser,product)
 	detail_url = 'https://www.worten.pt' + product
 	browser.goto detail_url
 	browser.scroll.to :bottom
-	sleep(3)
+	sleep(2)
 	result = Nokogiri::HTML(browser.html)
-	# hash with the product details
+	# parse the product details
 	details = {}
 	# description
 	details['description'] = result.css('div.w-product-about__info__wrapper').text
@@ -48,24 +52,57 @@ def product_details(browser,product)
 		quantity, stars = rating.text.match(/(\d+)\savaliaç(?:ão|ões)\scom\s(\d)\sestrelas?./).captures
 		details['ratings']["#{stars} stars"] = quantity
 	end
-
 	return details
 end
 
+# takes a product href and gets all comments (for this case we are only interested in the timestamp)
+# returns an array of hashes: [{stamp => stamp1}, {stamp => stamp2}]
+def all_comments(browser,product_href)
+	product_url = 'https://www.worten.pt' + product_href
+	comments = []
+	last_page = false
+	while !last_page
+		browser.goto product_url
+		# hammer time: scroll to bottom and wait some time, scroll up some and wait some more time to load elements
+		browser.scroll.to :bottom
+		sleep(2)
+		browser.scroll.to [0,4000]
+		sleep(2)
+		result = Nokogiri::HTML(browser.html)
+		# check if there are more comment pages
+		if result.xpath('/html/body/div[5]/div/div/section[3]/div/div/div/div/div/div[2]/div/div/div/div/div[3]/div/ul/li[2]/a').empty?
+			last_page = true
+		else
+			product_url = result.xpath('/html/body/div[5]/div/div/section[3]/div/div/div/div/div/div[2]/div/div/div/div/div[3]/div/ul/li[2]/a/@href').first.value
+		end
+		# parse the comments
+		result.css('span.bv-content-datetime-stamp').each do |stamp|
+			stamp
+			stamp.text
+			item = {}
+			item['stamp'] = stamp.text
+			comments << item
+		end
+	end
+	return comments
+end
+
+# takes a product href and a store to seach at and gets the stock results
+# returns an array of hashes: [{store1 => stock}, {store2 => stock}]
 def product_stock(browser,product,store_string)
 	detail_url = 'https://www.worten.pt' + product
 	browser.goto detail_url
 	sleep(1)
 	browser.div(:class => 'w-product__store-stock').click
 	sleep(1)
-	#result = Nokogiri::HTML(browser.html)
     browser.input(:id => 'w-modal--store-stock__search__input').click
     sleep(1)
     browser.send_keys store_string
     sleep(1)
 	browser.button(:class => 'w-button-primary w-modal--store-stock__search__button').click
-	sleep(3)
+	sleep(2)
 	result = Nokogiri::HTML(browser.html)
+	# parse the stores stock
 	store_stock = []
 	result.css('div.store-stock__results__items__details').each do |store|
 		stock_status = store.css('div.store-stock__results__items__details__stock').text.match(/^\s\n\s+(.*)\n/)[1]
@@ -76,17 +113,21 @@ def product_stock(browser,product,store_string)
 	return store_stock
 end
 
+# takes a search string and goes to search result page
 def search_store(browser,search_string)
 	search_url = 'https://www.worten.pt/lojas-worten?search=' + search_string.gsub(' ','+')
 	browser.goto search_url
 end
 
+# takes a store to search in the store search result page and gets the store details
+# returns a hash: {Coordenadas => "stuff", Horário => "stuff"}
 def store_details(browser,store_string)
 	result = Nokogiri::HTML(browser.html)
 	# list all stores if they are not visible
 	if result.css('section.w-section__wrapper').to_s.match('Visualizar todas as lojas')
 		browser.button(:text => 'Visualizar todas as lojas').click
 	end
+	# search for the and return 0 if not found
 	store_href = ""
 	result.css('section.w-store-block').each do |elem|
 		if elem.to_s.match(store_string)
@@ -99,42 +140,13 @@ def store_details(browser,store_string)
 	store_url = 'https://www.worten.pt' + store_href
 	browser.goto store_url
 	result = Nokogiri::HTML(browser.html)
+	# parse the store details
 	details = {}
 	details['Coordenadas'] = result.css('span.w-store__geolocation').first.text
 	details['Horário']     = result.css('div.w-store-details__schedule').css('p').first.text
 	return details
 end
 	
-# takes a product href and gets all comments (for this case we are only interested in the timestamp)
-# returns an array of hashes: [{stamp => stamp1}, {stamp => stamp2}]
-def all_comments(browser,product_href)
-	product_url = 'https://www.worten.pt' + product_href
-	comments = []
-	last_page = false
-	while !last_page
-		browser.goto product_url
-		# scroll to bottom and wait some time to load elements
-		browser.scroll.to :bottom
-		sleep(2)
-		result = Nokogiri::HTML(browser.html)
-		# check if there are more comment pages
-		if result.xpath('/html/body/div[5]/div/div/section[3]/div/div/div/div/div/div[2]/div/div/div/div/div[3]/div/ul/li[2]/a').empty?
-			last_page = true
-		else
-			product_url = result.xpath('/html/body/div[5]/div/div/section[3]/div/div/div/div/div/div[2]/div/div/div/div/div[3]/div/ul/li[2]/a/@href').first.value
-		end
-		#parse the comments
- 		result.css('span.bv-content-datetime-stamp')
-		result.css('span.bv-content-datetime-stamp').each do |stamp|
-			stamp
-			stamp.text
-			item = {}
-			item['stamp'] = stamp.text
-			comments << item
-		end
-	end
-	return comments
-end
 
 # takes a product href and adds it to the cart
 def add_product_to_cart(browser,product_href)
@@ -142,17 +154,18 @@ def add_product_to_cart(browser,product_href)
 	browser.goto product_url
 	sleep(1)
 	browser.button(:text => 'Adicionar ao Carrinho').click
-	# sometime for the click to take effect
+	# wait some time for the click to take effect
 	sleep(2)
 end
 
-# returns the cart details
+# gets the cart details
+# returns a hash: {item_price => "price", shipping_price => "price", "cart_total" => val}
 def cart_details(browser)
 	product_url = 'https://www.worten.pt/carrinho'
 	browser.goto product_url
 	sleep(1)
 	result = Nokogiri::HTML(browser.html)
-
+	# parse the cart details
 	details = {} 
 	details['items'] = result.xpath('/html/body/div[4]/header/div[1]/div[2]/div[2]/a/span').text.to_i
 	# in our case we will assume there is only one item and the only detail we need is the price
